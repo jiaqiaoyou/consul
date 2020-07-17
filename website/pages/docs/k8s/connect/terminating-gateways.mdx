@@ -19,12 +19,6 @@ terminating gateways. If you are using the latest official [consul-helm chart](h
 and have not customized the [imageK8S](/docs/k8s/helm#v-global-imagek8s) configuration for any of
 your components, you should be running a compatible version by default.
 
-If you are developing locally, are not using the [consul-helm chart](https://github.com/hashicorp/consul-helm), or have
-overridden the imageK8S in your specific configuration, you will need to ensure your environment configuration uses an
-image with a compatible binary installed. We recommend using an [official image](https://hub.docker.com/r/hashicorp/consul-k8s)
-from HashiCorp. If your organization or scenario requires you to build your own image, you can ensure your version of
-the consul-k8s binary is compatible by running `consul-k8s version` from the command line.
-
 Adding a terminating gateway is a multi-step process:
 
 * Update the helm chart with terminating gateway config options
@@ -107,11 +101,11 @@ Create a sample external service and register it with Consul.
 
 Register the external service with Consul:
 ```shell-session
-curl --request PUT --data @external.json -k http://localhost:8500/v1/catalog/register
+$ curl --request PUT --data @external.json -k http://localhost:8500/v1/catalog/register
 ```
 If ACLs and TLS are enabled :
 ```shell-session
-curl --request PUT --header "X-Consul-Token: $CONSUL_HTTP_TOKEN" --data @external.json -k https://localhost:8501/v1/catalog/register
+$ curl --request PUT --header "X-Consul-Token: $CONSUL_HTTP_TOKEN" --data @external.json -k https://localhost:8501/v1/catalog/register
 ```
 
 ### Update terminating ACL token if ACLs are enabled
@@ -140,7 +134,8 @@ $ consul acl token update -id <token-id> -policy-name example-https-write-policy
 ```
 
 ### Create the configuration entry for the terminating gateway
-Once the tokens have been updated, next write the Consul config entry for the terminating gateway:
+Once the tokens have been updated, next write the Consul [config](/docs/agent/config-entries/terminating-gateway)
+entry for the terminating gateway:
 ```shell
 Kind = "terminating-gateway"
 Name = "terminating-gateway"
@@ -151,7 +146,7 @@ Services = [
  }
 ]
 ```
-~> If ACLs are enabled a `CAFile` must be provided, it must point to the system trust store of the terminating gateway
+~> If TLS is enabled a `CAFile` must be provided, it must point to the system trust store of the terminating gateway
 container.
 
 Submit the terminating gateway entry with the Consul CLI using this command.
@@ -196,7 +191,6 @@ spec:
         # This name will be the service name in Consul.
         - name: static-client
           image: tutum/curl:latest
-          # Just spin & wait forever, we'll use `kubectl exec` to demo
           command: [ "/bin/sh", "-c", "--" ]
           args: [ "while true; do sleep 30; done;" ]
        # If ACLs are enabled, the serviceAccountName must match the Consul service name.
