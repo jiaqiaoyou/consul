@@ -70,7 +70,7 @@ $ export CONSUL_HTTP_SSL_VERIFY=false
 ```
 If ACLs are enabled also set:
 ```shell-session
-$ export CONSUL_HTTP_TOKEN=$(kubectl get secret consul-bootstrap-acl-token -o jsonpath={.data.token} | base64 -D)
+$ export CONSUL_HTTP_TOKEN=$(kubectl get secret consul-bootstrap-acl-token --output=jsonpath={.data.token} | base64 --decode)
 ```
 
 ## Register external services with Consul
@@ -207,5 +207,5 @@ $ kubectl apply -f static-client.yaml
 
 You can verify connectivity of the static-client and terminating gateway via a curl command:
 ```shell-session
-$ kubectl exec static-client-7cc6df495-qdtkp -- curl -vvvs -H "Host: example-https.com" http://localhost:1234/
+$ kubectl exec static-client-7cc6df495-qdtkp -- curl -vvvs --header "Host: example-https.com" http://localhost:1234/
 ```
