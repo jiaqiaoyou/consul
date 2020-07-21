@@ -60,14 +60,17 @@ $ kubectl port-foward consul-server-0 8501 &
 -> Be sure the latest consul binary is installed locally on your host.
 [https://releases.hashicorp.com/consul/](https://releases.hashicorp.com/consul/)
 
+```shell-session
+$ export CONSUL_HTTP_ADDR=http://localhost:8500
+```
 If TLS is enabled set:
 ```shell-session
 $ export CONSUL_HTTP_ADDR=https://localhost:8501
+$ export CONSUL_HTTP_SSL_VERIFY=false
 ```
 If ACLs are enabled also set:
 ```shell-session
 $ export CONSUL_HTTP_TOKEN=$(kubectl get secret consul-bootstrap-acl-token -o jsonpath={.data.token} | base64 -D)
-$ export CONSUL_HTTP_SSL_VERIFY=false
 ```
 
 ## Register external services with Consul
@@ -101,11 +104,11 @@ Create a sample external service and register it with Consul.
 
 Register the external service with Consul:
 ```shell-session
-$ curl --request PUT --data @external.json -k http://localhost:8500/v1/catalog/register
+$ curl --request PUT --data @external.json -k $CONSUL_HTTP_ADDR/v1/catalog/register
 ```
 If ACLs and TLS are enabled :
 ```shell-session
-$ curl --request PUT --header "X-Consul-Token: $CONSUL_HTTP_TOKEN" --data @external.json -k https://localhost:8501/v1/catalog/register
+$ curl --request PUT --header "X-Consul-Token: $CONSUL_HTTP_TOKEN" --data @external.json -k $CONSUL_HTTP_ADDR/v1/catalog/register
 ```
 
 ### Update terminating ACL token if ACLs are enabled
