@@ -4590,7 +4590,6 @@ func TestAutoConfig_Integration(t *testing.T) {
 		cert_file = "` + certFile + `"
 		key_file = "` + keyFile + `"
 		connect { enabled = true }
-		auto_encrypt { allow_tls = true }
 		auto_config {
 			authorization {
 				enabled = true
@@ -4651,6 +4650,35 @@ func TestAutoConfig_Integration(t *testing.T) {
 	// and then connect. Additionally we would have to have certificates or else the
 	// verify_incoming config on the server would not let it work.
 	testrpc.WaitForTestAgent(t, client.RPC, "dc1", testrpc.WithToken(TestDefaultMasterToken))
+
+	// ensure we got a TLS certificate
+	cert1 := client.Agent.tlsConfigurator.Cert()
+	require.NotNil(t, cert1)
+
+	// force a roots rotation by updating the CA config
+	t.Logf("Forcing roots rotation on the server")
+	ca := connect.TestCA(t, nil)
+	req := &structs.CARequest{
+		Datacenter:   "dc1",
+		WriteRequest: structs.WriteRequest{Token: TestDefaultMasterToken},
+		Config: &structs.CAConfiguration{
+			Provider: "consul",
+			Config: map[string]interface{}{
+				"LeafCertTTL":         "1h",
+				"PrivateKey":          ca.SigningKey,
+				"RootCert":            ca.RootCert,
+				"RotationPeriod":      "6h",
+				"IntermediateCertTTL": "3h",
+			},
+		},
+	}
+	var reply interface{}
+	require.NoError(t, srv.RPC("ConnectCA.ConfigurationSet", &req, &reply))
+
+	// ensure that a new cert gets generated and pushed into the TLS configurator
+	retry.Run(t, func(r *retry.R) {
+		require.NotEqual(r, cert1, client.Agent.tlsConfigurator.Cert())
+	})
 
 	// spot check that we now have an ACL token
 	require.NotEmpty(t, client.tokens.AgentToken())
